@@ -16,7 +16,7 @@ CAPTCHA_IMAGE_ID = "captchaFR_CaptchaImage"
 CPATCHA_AUDIO_ID = "BDC_CaptchaSoundAudio_captchaFR"
 CPATCHA_AUDIO_BUTTON_ID = "captchaFR_SoundLink"
 CPATCHA_TEMP_PATH = os.path.join(tempfile.gettempdir(), "captchaFR")
-WHISPER_MODEL = "small"
+WHISPER_MODEL = "medium"
 URL = (
     "https://www.rdv-prefecture.interieur.gouv.fr/rdvpref/reservation/demarche/3762/cgu"
 )
@@ -72,7 +72,7 @@ def main():
 
     # Setup a Firefox web driver
     options = Options()
-    # options.add_argument("--headless")
+    options.add_argument("--headless")
     options.set_preference("media.volume_scale", "0.0")
     options.set_preference("browser.download.folderList", 2)
     options.set_preference("browser.download.dir", CPATCHA_TEMP_PATH)
@@ -83,8 +83,9 @@ def main():
     for _ in range(CAPTCHA_COUNT):
         try:
             driver.get(URL)
-            image = get_captcha_image(driver)
-            audio_blob_uri = get_audio_blob_uri(driver)
+            image_element = get_captcha_image(driver)
+            image = image_element.screenshot_as_png
+
         except WebDriverException as _:
             print(
                 "Failed to retrieve captcha image. Retrying in {} seconds...".format(
@@ -92,10 +93,11 @@ def main():
                 )
             )
 
-        # A hacky way to save the sound files
+        # A hack for saving the sound files
         try:
-            # This call will block for FETCH_INTERVAL seconds, effectively casusing
+            # The get call will block for FETCH_INTERVAL seconds, effectively casusing
             # the equivalent of sleep(FETCH_INTERVAL)
+            audio_blob_uri = get_audio_blob_uri(driver)
             driver.get(audio_blob_uri)
         except WebDriverException as _:
             pass
@@ -107,11 +109,10 @@ def main():
                 with open(
                     os.path.join(datapath, "{}.png".format(text)), "wb"
                 ) as image_file:
-                    image_file.write(image.screenshot_as_png)
+                    image_file.write(image)
 
     # Clean up
     driver.quit()
 
 
-if __name__ == "__main__":
-    main()
+main()
