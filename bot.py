@@ -13,7 +13,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 CAPTCHA_COUNT = 10
 FETCH_INTERVAL = 30
-CAPTCHA_IMAGE_ID = "captchaFR_CaptchaImage"
 CPATCHA_AUDIO_ID = "BDC_CaptchaSoundAudio_captchaFR"
 CPATCHA_AUDIO_BUTTON_ID = "captchaFR_SoundLink"
 CPATCHA_INPUT_ID = "captchaFormulaireExtInput"
