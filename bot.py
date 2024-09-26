@@ -17,7 +17,7 @@ CPATCHA_AUDIO_ID = "BDC_CaptchaSoundAudio_captchaFR"
 CPATCHA_AUDIO_BUTTON_ID = "captchaFR_SoundLink"
 CPATCHA_INPUT_ID = "captchaFormulaireExtInput"
 CPATCHA_TEMP_PATH = os.path.join(tempfile.gettempdir(), "captchaFR")
-WHISPER_MODEL = "medium"
+WHISPER_MODEL = "small"
 CGU_URL = (
     "https://www.rdv-prefecture.interieur.gouv.fr/rdvpref/reservation/demarche/3762/cgu"
 )
@@ -46,7 +46,7 @@ def get_audio_blob_uri(driver):
     )
     audio_button.click()
     return (
-        WebDriverWait(driver, 10)
+        WebDriverWait(driver, 30)
         .until(
             expected_conditions.presence_of_element_located((By.ID, CPATCHA_AUDIO_ID))
         )
@@ -94,15 +94,17 @@ def main():
     shutil.rmtree(CPATCHA_TEMP_PATH, ignore_errors=True)
     os.makedirs(CPATCHA_TEMP_PATH, exist_ok=True)
 
-    # Load Whisper model
-    model = whisper.load_model(WHISPER_MODEL)
-
-    # Setup a Firefox web driver
+    # Create the webdriver configuration
     options = Options()
     options.add_argument("--headless")
     options.set_preference("media.volume_scale", "0.0")
     options.set_preference("browser.download.folderList", 2)
     options.set_preference("browser.download.dir", CPATCHA_TEMP_PATH)
+
+    # Load Whisper model
+    print("Loading OpenAI Whisper {} model...".format(WHISPER_MODEL))
+    model = whisper.load_model(WHISPER_MODEL)
+    print("Model loaded.")
 
     # Retrieve Cpatcha images
     for _ in range(CAPTCHA_COUNT):
