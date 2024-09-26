@@ -100,7 +100,7 @@ def main():
 
     # Setup a Firefox web driver
     options = Options()
-    # options.add_argument("--headless")
+    options.add_argument("--headless")
     options.set_preference("media.volume_scale", "0.0")
     options.set_preference("browser.download.folderList", 2)
     options.set_preference("browser.download.dir", CPATCHA_TEMP_PATH)
