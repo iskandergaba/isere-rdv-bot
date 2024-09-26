@@ -1,4 +1,5 @@
 import os
+import shutil
 import ssl
 import tempfile
 
@@ -90,9 +91,8 @@ def main():
     # Monkypatch to bypass Self-signed SSL certificate crap problems in enterprise
     ssl._create_default_https_context = ssl._create_unverified_context
 
-    # Create data path
-    datapath = os.path.abspath("data")
-    os.makedirs(datapath, exist_ok=True)
+    # Create work path
+    shutil.rmtree(CPATCHA_TEMP_PATH, ignore_errors=True)
     os.makedirs(CPATCHA_TEMP_PATH, exist_ok=True)
 
     # Load Whisper model
@@ -131,6 +131,7 @@ def main():
                 input_element.send_keys(text)
                 get_next_button(driver).click()
 
+                # Check if the cpatcha has been transcribed correctly
                 if driver.current_url.startswith(RDV_URL):
                     # Check if there is a rendez-vous spot
                     if rdv_spot_exists(driver):
@@ -138,16 +139,14 @@ def main():
                     else:
                         print("No rendez-vous spots available.")
                 else:
-                    print(
-                        "Erroneous captcha transcribed. Retring in {} seconds...".format(
-                            FETCH_INTERVAL
-                        )
-                    )
+                    print("Erroneous captcha transcribed. Retrying...")
 
+                # Remove the sound file
                 os.remove(filepath)
 
         # Clean up
         driver.quit()
 
 
-main()
+if __name__ == "__main__":
+    main()
