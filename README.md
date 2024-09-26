@@ -25,5 +25,5 @@ pip install selenium openai-whisper
 
 5. Run the script
 ```python
-python neobot.py
+python bot.py
 ```
