@@ -1,8 +1,11 @@
+import asyncio
 import os
 import shutil
 import ssl
 import tempfile
+import tomllib
 
+import telegram
 import whisper
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
@@ -11,13 +14,12 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
 
-CAPTCHA_COUNT = 10
 FETCH_INTERVAL = 30
 CPATCHA_AUDIO_ID = "BDC_CaptchaSoundAudio_captchaFR"
 CPATCHA_AUDIO_BUTTON_ID = "captchaFR_SoundLink"
 CPATCHA_INPUT_ID = "captchaFormulaireExtInput"
 CPATCHA_TEMP_PATH = os.path.join(tempfile.gettempdir(), "captchaFR")
-WHISPER_MODEL = "small"
+ENV_FILE_PATH = os.path.join(os.curdir, "env.toml")
 CGU_URL = (
     "https://www.rdv-prefecture.interieur.gouv.fr/rdvpref/reservation/demarche/3762/cgu"
 )
@@ -25,13 +27,13 @@ RDV_URL = "https://www.rdv-prefecture.interieur.gouv.fr/rdvpref/reservation/dema
 
 
 def get_captcha_input(driver):
-    return WebDriverWait(driver, 10).until(
+    return WebDriverWait(driver, FETCH_INTERVAL).until(
         expected_conditions.visibility_of_element_located((By.ID, CPATCHA_INPUT_ID))
     )
 
 
 def get_next_button(driver):
-    return WebDriverWait(driver, 10).until(
+    return WebDriverWait(driver, FETCH_INTERVAL).until(
         expected_conditions.visibility_of_element_located(
             (By.XPATH, "//*[contains(text(), 'Suivant')]")
         )
@@ -39,7 +41,7 @@ def get_next_button(driver):
 
 
 def get_audio_blob_uri(driver):
-    audio_button = WebDriverWait(driver, 10).until(
+    audio_button = WebDriverWait(driver, FETCH_INTERVAL).until(
         expected_conditions.visibility_of_element_located(
             (By.ID, CPATCHA_AUDIO_BUTTON_ID)
         )
@@ -71,7 +73,7 @@ def transcribe_audio_file(model, audio_filepath):
 def rdv_spot_exists(driver):
     if driver.current_url.startswith(RDV_URL):
         try:
-            WebDriverWait(driver, 10).until(
+            WebDriverWait(driver, FETCH_INTERVAL).until(
                 expected_conditions.visibility_of_element_located(
                     (
                         By.XPATH,
@@ -86,6 +88,17 @@ def rdv_spot_exists(driver):
         return False
 
 
+async def notify_user(driver, bot, chat_id):
+    filepath = os.path.join(CPATCHA_TEMP_PATH, "{}.png".format(tempfile.mktemp()))
+    driver.save_full_page_screenshot(filename=filepath)
+    try:
+        await bot.send_photo(chat_id, filepath, caption="Found rendez-vous spots!")
+    except:
+        pass
+    finally:
+        os.remove(filepath)
+
+
 def main():
     # Monkypatch to bypass Self-signed SSL certificate crap problems in enterprise
     ssl._create_default_https_context = ssl._create_unverified_context
@@ -94,6 +107,10 @@ def main():
     shutil.rmtree(CPATCHA_TEMP_PATH, ignore_errors=True)
     os.makedirs(CPATCHA_TEMP_PATH, exist_ok=True)
 
+    # Load config file
+    with open(ENV_FILE_PATH, "rb") as f:
+        config = tomllib.load(f)
+
     # Create the webdriver configuration
     options = Options()
     options.add_argument("--headless")
@@ -101,13 +118,21 @@ def main():
     options.set_preference("browser.download.folderList", 2)
     options.set_preference("browser.download.dir", CPATCHA_TEMP_PATH)
 
+    # Load 'isere-rdv-bot'
+    bot_token = config["telegram"]["bot_token"]
+    chat_id = config["telegram"]["chat_id"]
+    print("Loading Telegram bot 'isere-rdv-bot'...")
+    bot = telegram.Bot(token=bot_token)
+    print("Telegram bot 'isere-rdv-bot' loaded.")
+
     # Load Whisper model
-    print("Loading OpenAI Whisper {} model...".format(WHISPER_MODEL))
-    model = whisper.load_model(WHISPER_MODEL)
+    whisper_model = config["openai"]["whisper_model"]
+    print("Loading OpenAI Whisper {} model...".format(whisper_model))
+    model = whisper.load_model(whisper_model)
     print("Model loaded.")
 
-    # Retrieve Cpatcha images
-    for _ in range(CAPTCHA_COUNT):
+    # Check for rendez-vous slots
+    while True:
         driver = webdriver.Firefox(options=options)
         driver.set_page_load_timeout(FETCH_INTERVAL)
         try:
@@ -137,6 +162,9 @@ def main():
                     # Check if there is a rendez-vous spot
                     if rdv_spot_exists(driver):
                         print("There are available rendez-vous spots!")
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        loop.run_until_complete(notify_user(driver, bot, chat_id))
                     else:
                         print("No rendez-vous spots available.")
                 else:
