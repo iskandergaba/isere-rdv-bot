@@ -28,12 +28,12 @@ pip install selenium openai-whisper python-telegram-bot
 bot_token = "0123456789:ZEE5TER5YUnFYreIy1ptnLmenta0a6vQriT"
 ```
 
-5. Replace `chat_id` value in `env.toml` with your telegram chat ID as in the example below. You can find your chat ID by texting `/start` to `@GetMyIDBot` on Telegram.
+6. Replace `chat_id` value in `env.toml` with your telegram chat ID as in the example below. You can find your chat ID by texting `/start` to `@GetMyIDBot` on Telegram.
 ```toml
 chat_id = "0123456789"
 ```
 
-6. Run the script
+7. Run the script
 ```shell
 python bot.py
 ```
