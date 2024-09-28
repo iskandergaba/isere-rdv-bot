@@ -18,12 +18,17 @@ conda create -n isere-rdv-bot
 conda activate isere-rdv-bot
 ```
 
-4. Install [Selenium](https://selenium.dev) and [OpenAI's Whisper](https://openai.com/index/whisper)
-```python
-pip install selenium openai-whisper
+4. Install [Selenium](https://selenium.dev), [OpenAI's Whisper model](https://openai.com/index/whisper), and [python-telegram-bot](https://python-telegram-bot.org)
+```shell
+pip install selenium openai-whisper python-telegram-bot
 ```
 
-5. Run the script
-```python
+5. Replace `chat_id` value in `env.toml` with your telegram chat ID as in the example below. You can find your chat ID by texting `/start` to `@GetMyIDBot` on Telegram.
+```toml
+chat_id = "0123456789"
+```
+
+6. Run the script
+```shell
 python bot.py
 ```
