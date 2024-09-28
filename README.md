@@ -14,13 +14,13 @@ sudo apt install ffmpeg
 
 3. **Recommended:** Create a [Conda](https://docs.anaconda.com/miniconda) environment and activate it
 ```shell
-conda create -n isere-rdv-bot
+conda create -n isere-rdv-bot python
 conda activate isere-rdv-bot
 ```
 
-4. Install [Selenium](https://selenium.dev), [OpenAI's Whisper model](https://openai.com/index/whisper), and [python-telegram-bot](https://python-telegram-bot.org)
+4. Install bot dependencies
 ```shell
-pip install selenium openai-whisper python-telegram-bot
+pip install -r requirements.txt --upgrade
 ```
 
 5. Replace `chat_id` value in `env.toml` with your telegram chat ID as in the example below. You can find your chat ID by texting `/start` to `@BotFather` on Telegram.
