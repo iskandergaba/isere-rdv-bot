@@ -121,9 +121,9 @@ def main():
     # Load 'isere-rdv-bot'
     bot_token = config["telegram"]["bot_token"]
     chat_id = config["telegram"]["chat_id"]
-    print("Loading Telegram bot 'isere-rdv-bot'...")
+    print("Loading Telegram bot...")
     bot = telegram.Bot(token=bot_token)
-    print("Telegram bot 'isere-rdv-bot' loaded.")
+    print("Telegram bot loaded.")
 
     # Load Whisper model
     whisper_model = config["openai"]["whisper_model"]
