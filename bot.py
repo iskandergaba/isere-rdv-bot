@@ -92,7 +92,11 @@ async def notify_user(driver, bot, chat_id):
     filepath = os.path.join(CPATCHA_TEMP_PATH, "{}.png".format(tempfile.mktemp()))
     driver.save_full_page_screenshot(filename=filepath)
     try:
-        await bot.send_photo(chat_id, filepath, caption="Found rendez-vous spots!")
+        await bot.send_photo(
+            chat_id,
+            filepath,
+            caption="Found rendez-vous spots! Check: {}".format(CGU_URL),
+        )
     except:
         pass
     finally:
