@@ -57,7 +57,7 @@ def get_audio_blob_uri(driver):
 
 
 def transcribe_audio_file(model, audio_filepath):
-    result = model.transcribe(audio_filepath, language="fr")
+    result = model.transcribe(audio_filepath, language="fr", fp16=False)
     text = result["text"]
     text = (
         text.replace(" ", "")
@@ -97,7 +97,7 @@ async def notify_user(driver, bot, chat_id):
             filepath,
             caption="Found rendez-vous spots! Check: {}".format(CGU_URL),
         )
-    except:
+    except Exception as _:
         pass
     finally:
         os.remove(filepath)
