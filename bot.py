@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import shutil
 import ssl
@@ -82,7 +83,7 @@ def rdv_spot_exists(driver):
                 )
             )
             return False
-        except:
+        except Exception:
             return True
     else:
         return False
@@ -95,16 +96,20 @@ async def notify_user(driver, bot, chat_id):
         await bot.send_photo(
             chat_id,
             filepath,
-            caption="Found rendez-vous spots! Check: {}".format(CGU_URL),
+            caption="Found open rendez-vous spots! Check: {}".format(CGU_URL),
         )
-    except Exception as _:
+    except Exception:
         pass
     finally:
         os.remove(filepath)
 
 
 def main():
-    # Monkypatch to bypass Self-signed SSL certificate crap problems in enterprise
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)s: %(message)s", level=logging.INFO
+    )
+
+    # Monkypatch to bypass self-signed SSL certificate issues in enterprise environments
     ssl._create_default_https_context = ssl._create_unverified_context
 
     # Create work path
@@ -125,15 +130,15 @@ def main():
     # Load 'isere-rdv-bot'
     bot_token = config["telegram"]["bot_token"]
     chat_id = config["telegram"]["chat_id"]
-    print("Loading Telegram bot...")
+    logging.info("Loading Telegram bot...")
     bot = telegram.Bot(token=bot_token)
-    print("Telegram bot loaded.")
+    logging.info("Telegram bot loaded.")
 
     # Load Whisper model
     whisper_model = config["openai"]["whisper_model"]
-    print("Loading OpenAI Whisper {} model...".format(whisper_model))
+    logging.info("Loading OpenAI Whisper {} model...".format(whisper_model))
     model = whisper.load_model(whisper_model)
-    print("Model loaded.")
+    logging.info("Model loaded.")
 
     # Check for rendez-vous slots
     while True:
@@ -143,16 +148,16 @@ def main():
             driver.get(CGU_URL)
             input_element = get_captcha_input(driver)
 
-        except WebDriverException as _:
-            print("Failed to retrieve captcha input element. Retrying...")
+        except WebDriverException:
+            logging.error("Failed to retrieve captcha input element. Retrying...")
 
         # A hack for saving the sound files
         try:
-            # The get call will block for FETCH_INTERVAL seconds, effectively casusing
-            # the equivalent of sleep(FETCH_INTERVAL)
+            # The get call will block for FETCH_INTERVAL seconds, effectively
+            # causing the equivalent of sleep(FETCH_INTERVAL)
             audio_blob_uri = get_audio_blob_uri(driver)
             driver.get(audio_blob_uri)
-        except WebDriverException as _:
+        except WebDriverException:
             pass
         for file in os.listdir(CPATCHA_TEMP_PATH):
             if file.endswith(".wav"):
@@ -165,14 +170,14 @@ def main():
                 if driver.current_url.startswith(RDV_URL):
                     # Check if there is a rendez-vous spot
                     if rdv_spot_exists(driver):
-                        print("There are available rendez-vous spots!")
+                        logging.info("Found open rendez-vous spots!")
                         loop = asyncio.new_event_loop()
                         asyncio.set_event_loop(loop)
                         loop.run_until_complete(notify_user(driver, bot, chat_id))
                     else:
-                        print("No rendez-vous spots available.")
+                        logging.info("No open rendez-vous spots found.")
                 else:
-                    print("Erroneous captcha transcribed. Retrying...")
+                    logging.error("Failed to transcribe the captcha correctly. Retrying...")
 
                 # Remove the sound file
                 os.remove(filepath)
